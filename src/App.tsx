@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ThemeProvider } from 'styled-components';
-import { theme } from './styles/theme';
-import { GlobalStyles } from './styles/GlobalStyles';
-import styled, { keyframes } from 'styled-components';
-import { GameBoard } from './components/GameBoard';
-import { Keyboard } from './components/Keyboard';
-import { isValidKey, type KeyStatus } from './utils/keyboard';
-import type { TileStatus } from './components/Tile';
-import { getRandomWord, isValidWord } from './services/wordService';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { ThemeProvider } from "styled-components";
+import { theme } from "./styles/theme";
+import { GlobalStyles } from "./styles/GlobalStyles";
+import styled, { keyframes } from "styled-components";
+import { GameBoard } from "./components/GameBoard";
+import { Keyboard } from "./components/Keyboard";
+import { isValidKey, type KeyStatus } from "./utils/keyboard";
+import type { TileStatus } from "./components/Tile";
+import { getRandomWord, isValidWord } from "./services/wordService";
 
 type GameStats = {
   gamesPlayed: number;
@@ -24,7 +24,7 @@ const initialStats: GameStats = {
   currentStreak: 0,
   maxStreak: 0,
   guessDistribution: [0, 0, 0, 0, 0, 0], // Index 0-5 = wins in 1-6 tries
-  failures: 0 // Track total failures
+  failures: 0, // Track total failures
 };
 
 const MainContainer = styled.main`
@@ -130,8 +130,9 @@ const GuessBar = styled.div<{ $percentage: number; $isFailure?: boolean }>`
 
     .fill {
       height: 100%;
-      width: ${props => props.$percentage}%;
-      background-color: ${props => props.$isFailure ? '#ff4444' : props.theme.colors.primary};
+      width: ${(props) => props.$percentage}%;
+      background-color: ${(props) =>
+        props.$isFailure ? "#ff4444" : props.theme.colors.primary};
       transition: width 0.3s ease;
     }
   }
@@ -164,12 +165,13 @@ const GameOverlay = styled.div`
   min-width: 300px;
 `;
 
-const Message = styled.div<{ $type: 'error' | 'success' }>`
+const Message = styled.div<{ $type: "error" | "success" }>`
   position: absolute;
   top: 20%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: ${props => props.$type === 'error' ? '#ff4444' : '#44ff44'};
+  background-color: ${(props) =>
+    props.$type === "error" ? "#ff4444" : "#44ff44"};
   color: white;
   padding: 10px 20px;
   border-radius: 5px;
@@ -179,20 +181,23 @@ const Message = styled.div<{ $type: 'error' | 'success' }>`
 `;
 
 function App() {
-  const [solution, setSolution] = useState('');
+  const [solution, setSolution] = useState("");
   const [guesses, setGuesses] = useState<string[]>([]);
-  const [currentGuess, setCurrentGuess] = useState('');
+  const [currentGuess, setCurrentGuess] = useState("");
   const [keyStatus, setKeyStatus] = useState<KeyStatus>({});
-  const [message, setMessage] = useState<{ text: string; type: 'error' | 'success' } | null>(null);
-  const [gameOver, setGameOver] = useState<'won' | 'lost' | null>(null);
+  const [message, setMessage] = useState<{
+    text: string;
+    type: "error" | "success";
+  } | null>(null);
+  const [gameOver, setGameOver] = useState<"won" | "lost" | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const statsRef = useRef<GameStats>(initialStats);
   const [stats, setStats] = useState<GameStats>(() => {
-    const saved = localStorage.getItem('wordleStats');
+    const saved = localStorage.getItem("wordleStats");
     if (saved) {
       const parsedStats = JSON.parse(saved);
       // Ensure failures is initialized for existing stored stats
-      if (!('failures' in parsedStats)) {
+      if (!("failures" in parsedStats)) {
         parsedStats.failures = 0;
       }
       statsRef.current = parsedStats;
@@ -204,7 +209,7 @@ function App() {
 
   // Load initial word
   useEffect(() => {
-    getRandomWord().then(word => {
+    getRandomWord().then((word) => {
       setSolution(word);
       setIsLoading(false);
     });
@@ -212,7 +217,7 @@ function App() {
 
   useEffect(() => {
     statsRef.current = stats;
-    localStorage.setItem('wordleStats', JSON.stringify(stats));
+    localStorage.setItem("wordleStats", JSON.stringify(stats));
   }, [stats]);
 
   useEffect(() => {
@@ -222,113 +227,145 @@ function App() {
     }
   }, [message]);
 
-  const updateStats = useCallback((won: boolean, numGuesses?: number) => {
-    console.log('Updating stats:', { won, numGuesses, currentGuesses: guesses.length });
-    console.log('Current stats ref:', statsRef.current);
-    
-    const newStats = {
-      ...statsRef.current,
-      gamesPlayed: statsRef.current.gamesPlayed + 1,
-      gamesWon: won ? statsRef.current.gamesWon + 1 : statsRef.current.gamesWon,
-      currentStreak: won ? statsRef.current.currentStreak + 1 : 0,
-      maxStreak: won ? Math.max(statsRef.current.maxStreak, statsRef.current.currentStreak + 1) : statsRef.current.maxStreak,
-      guessDistribution: [...statsRef.current.guessDistribution],
-      failures: won ? statsRef.current.failures : statsRef.current.failures + 1
-    };
-    
-    if (won && numGuesses) {
-      newStats.guessDistribution[numGuesses - 1]++;
-    }
-    
-    console.log('New stats to be set:', newStats);
-    setStats(newStats);
-  }, [guesses.length]);
-
-  const updateKeyStatus = useCallback((guess: string) => {
-    const newStatus: { [key: string]: TileStatus } = { ...keyStatus };
-    const upperGuess = guess.toUpperCase();
-    
-    for (let i = 0; i < upperGuess.length; i++) {
-      const letter = upperGuess[i];
-      
-      if (solution[i] === letter) {
-        newStatus[letter] = 'correct';
-      } else if (solution.includes(letter)) {
-        if (newStatus[letter] !== 'correct') {
-          newStatus[letter] = 'present';
-        }
-      } else {
-        if (!newStatus[letter]) {
-          newStatus[letter] = 'absent';
-        }
-      }
-    }
-    
-    setKeyStatus(newStatus);
-  }, [solution, keyStatus]);
-
-  const onKey = useCallback(async (key: string) => {
-    if (gameOver || isLoading) return;
-    
-    if (key === 'BACKSPACE') {
-      setCurrentGuess(prev => prev.slice(0, -1));
-    } else if (key === 'ENTER') {
-      if (currentGuess.length !== 5) {
-        setMessage({ text: 'Not enough letters', type: 'error' });
-        return;
-      }
-      
-      const upperGuess = currentGuess.toUpperCase();
-      const isValid = await isValidWord(upperGuess);
-      
-      if (!isValid) {
-        setMessage({ text: 'Not in word list', type: 'error' });
-        return;
-      }
-      
-      setGuesses(prev => [...prev, upperGuess]);
-      updateKeyStatus(upperGuess);
-      setCurrentGuess('');
-
-      // Log current game state
-      console.log('Current game state:', {
-        guessCount: guesses.length + 1,
-        isLastGuess: guesses.length === 5,
-        isCorrect: upperGuess === solution
+  const updateStats = useCallback(
+    (won: boolean, numGuesses?: number) => {
+      console.log("Updating stats:", {
+        won,
+        numGuesses,
+        currentGuesses: guesses.length,
       });
+      console.log("Current stats ref:", statsRef.current);
 
-      if (upperGuess === solution) {
-        console.log('Game won on guess #', guesses.length + 1);
-        setGameOver('won');
-        setMessage({ text: 'Brilliant!', type: 'success' });
-        updateStats(true, guesses.length + 1);
-      } else if (guesses.length === 5) {
-        console.log('Game lost after 6 guesses');
-        setGameOver('lost');
-        updateStats(false, 6); // Pass the actual number of guesses (6) for losses
+      const newStats = {
+        ...statsRef.current,
+        gamesPlayed: statsRef.current.gamesPlayed + 1,
+        gamesWon: won
+          ? statsRef.current.gamesWon + 1
+          : statsRef.current.gamesWon,
+        currentStreak: won ? statsRef.current.currentStreak + 1 : 0,
+        maxStreak: won
+          ? Math.max(
+              statsRef.current.maxStreak,
+              statsRef.current.currentStreak + 1,
+            )
+          : statsRef.current.maxStreak,
+        guessDistribution: [...statsRef.current.guessDistribution],
+        failures: won
+          ? statsRef.current.failures
+          : statsRef.current.failures + 1,
+      };
+
+      if (won && numGuesses) {
+        newStats.guessDistribution[numGuesses - 1]++;
       }
-    } else if (currentGuess.length < 5) {
-      setCurrentGuess(prev => prev + key);
-    } else {
-      setMessage({ text: 'Word too long', type: 'error' });
-    }
-  }, [currentGuess, guesses.length, updateKeyStatus, solution, gameOver, isLoading, updateStats]);
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    event.preventDefault();
-    const key = event.key.toUpperCase();
-    
-    const mappedKey = key === 'ENTER' ? 'ENTER' : 
-                     key === 'BACKSPACE' ? 'BACKSPACE' : 
-                     key;
-                     
-    if (!isValidKey(mappedKey)) return;
-    onKey(mappedKey);
-  }, [onKey]);
+      console.log("New stats to be set:", newStats);
+      setStats(newStats);
+    },
+    [guesses.length],
+  );
+
+  const updateKeyStatus = useCallback(
+    (guess: string) => {
+      const newStatus: { [key: string]: TileStatus } = { ...keyStatus };
+      const upperGuess = guess.toUpperCase();
+
+      for (let i = 0; i < upperGuess.length; i++) {
+        const letter = upperGuess[i];
+
+        if (solution[i] === letter) {
+          newStatus[letter] = "correct";
+        } else if (solution.includes(letter)) {
+          if (newStatus[letter] !== "correct") {
+            newStatus[letter] = "present";
+          }
+        } else {
+          if (!newStatus[letter]) {
+            newStatus[letter] = "absent";
+          }
+        }
+      }
+
+      setKeyStatus(newStatus);
+    },
+    [solution, keyStatus],
+  );
+
+  const onKey = useCallback(
+    async (key: string) => {
+      if (gameOver || isLoading) return;
+
+      if (key === "BACKSPACE") {
+        setCurrentGuess((prev) => prev.slice(0, -1));
+      } else if (key === "ENTER") {
+        if (currentGuess.length !== 5) {
+          setMessage({ text: "Not enough letters", type: "error" });
+          return;
+        }
+
+        const upperGuess = currentGuess.toUpperCase();
+        const isValid = await isValidWord(upperGuess);
+
+        if (!isValid) {
+          setMessage({ text: "Not in word list", type: "error" });
+          return;
+        }
+
+        setGuesses((prev) => [...prev, upperGuess]);
+        updateKeyStatus(upperGuess);
+        setCurrentGuess("");
+
+        // Log current game state
+        console.log("Current game state:", {
+          guessCount: guesses.length + 1,
+          isLastGuess: guesses.length === 5,
+          isCorrect: upperGuess === solution,
+        });
+
+        if (upperGuess === solution) {
+          console.log("Game won on guess #", guesses.length + 1);
+          setGameOver("won");
+          setMessage({ text: "Brilliant!", type: "success" });
+          updateStats(true, guesses.length + 1);
+        } else if (guesses.length === 5) {
+          console.log("Game lost after 6 guesses");
+          setGameOver("lost");
+          updateStats(false, 6); // Pass the actual number of guesses (6) for losses
+        }
+      } else if (currentGuess.length < 5) {
+        setCurrentGuess((prev) => prev + key);
+      } else {
+        setMessage({ text: "Word too long", type: "error" });
+      }
+    },
+    [
+      currentGuess,
+      guesses.length,
+      updateKeyStatus,
+      solution,
+      gameOver,
+      isLoading,
+      updateStats,
+    ],
+  );
+
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      event.preventDefault();
+      const key = event.key.toUpperCase();
+
+      const mappedKey =
+        key === "ENTER" ? "ENTER" : key === "BACKSPACE" ? "BACKSPACE" : key;
+
+      if (!isValidKey(mappedKey)) return;
+      onKey(mappedKey);
+    },
+    [onKey],
+  );
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   const resetGame = useCallback(async () => {
@@ -336,7 +373,7 @@ function App() {
     const newWord = await getRandomWord();
     setSolution(newWord);
     setGuesses([]);
-    setCurrentGuess('');
+    setCurrentGuess("");
     setKeyStatus({});
     setMessage(null);
     setGameOver(null);
@@ -350,12 +387,12 @@ function App() {
       currentStreak: 0,
       maxStreak: 0,
       guessDistribution: [0, 0, 0, 0, 0, 0],
-      failures: 0
+      failures: 0,
     };
     statsRef.current = freshStats;
     setStats(freshStats);
-    localStorage.removeItem('wordleStats');
-    console.log('Stats reset to:', freshStats);
+    localStorage.removeItem("wordleStats");
+    console.log("Stats reset to:", freshStats);
   }, []);
 
   const renderStats = () => {
@@ -386,8 +423,8 @@ function App() {
         </StatsContainer>
         <GuessDistribution>
           {stats.guessDistribution.map((count, index) => (
-            <GuessBar 
-              key={index} 
+            <GuessBar
+              key={index}
               $percentage={maxGuesses > 0 ? (count / maxGuesses) * 100 : 0}
               $isFailure={false}
             >
@@ -398,9 +435,11 @@ function App() {
               <div className="count">{count}</div>
             </GuessBar>
           ))}
-          <GuessBar 
-            key="failures" 
-            $percentage={maxGuesses > 0 ? (stats.failures / maxGuesses) * 100 : 0}
+          <GuessBar
+            key="failures"
+            $percentage={
+              maxGuesses > 0 ? (stats.failures / maxGuesses) * 100 : 0
+            }
             $isFailure={true}
           >
             <div className="guess-number">X</div>
@@ -410,13 +449,9 @@ function App() {
             <div className="count">{stats.failures}</div>
           </GuessBar>
         </GuessDistribution>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <ReplayButton onClick={resetGame}>
-            Play Again
-          </ReplayButton>
-          <ResetStatsButton onClick={resetStats}>
-            Reset Stats
-          </ResetStatsButton>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          <ReplayButton onClick={resetGame}>Play Again</ReplayButton>
+          <ResetStatsButton onClick={resetStats}>Reset Stats</ResetStatsButton>
         </div>
       </>
     );
@@ -424,21 +459,19 @@ function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <GlobalStyles />
+      <GlobalStyles theme={theme} />
       <MainContainer>
         <Content>
           <Title>Wordle</Title>
-          {message && (
-            <Message $type={message.type}>
-              {message.text}
-            </Message>
-          )}
+          {message && <Message $type={message.type}>{message.text}</Message>}
           {gameOver && (
             <GameOverlay>
-              <h2>{gameOver === 'won' ? '🎉 Congratulations!' : '😔 Game Over'}</h2>
+              <h2>
+                {gameOver === "won" ? "🎉 Congratulations!" : "😔 Game Over"}
+              </h2>
               <p>
-                {gameOver === 'won' 
-                  ? `You won in ${guesses.length} ${guesses.length === 1 ? 'try' : 'tries'}!` 
+                {gameOver === "won"
+                  ? `You won in ${guesses.length} ${guesses.length === 1 ? "try" : "tries"}!`
                   : `The word was: ${solution}`}
               </p>
               {renderStats()}
@@ -453,10 +486,7 @@ function App() {
                 currentGuess={currentGuess.toUpperCase()}
                 solution={solution}
               />
-              <Keyboard
-                onKey={onKey}
-                keyStatus={keyStatus}
-              />
+              <Keyboard onKey={onKey} keyStatus={keyStatus} />
             </>
           )}
         </Content>
