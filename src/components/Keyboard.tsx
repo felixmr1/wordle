@@ -16,6 +16,7 @@ const KeyboardContainer = styled.div`
   margin-top: auto;
   width: 100%;
   max-width: 500px;
+  box-sizing: border-box;
 `;
 
 const KeyboardRow = styled.div`
@@ -23,6 +24,12 @@ const KeyboardRow = styled.div`
   justify-content: center;
   gap: ${({ theme }) => theme.sizes.keyboard.gap};
   width: 100%;
+  padding: 0 5px;
+  box-sizing: border-box;
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
+    gap: ${({ theme }) => theme.mobileSizes.keyboard.gap};
+  }
 `;
 
 export const Keyboard: React.FC<KeyboardProps> = ({ onKey, keyStatus }) => {

@@ -25,6 +25,7 @@ const KeyContainer = styled.button<{ $status?: TileStatus; $wide?: boolean }>`
   flex: ${({ $wide }) => ($wide ? 1.5 : 1)};
   font-size: ${({ $wide }) => ($wide ? '12px' : '1.25rem')};
   min-width: ${({ theme }) => theme.sizes.keyboard.key};
+  max-width: ${({ $wide }) => ($wide ? '85px' : '45px')};
 
   ${({ $status, theme }) => {
     switch ($status) {
@@ -55,6 +56,8 @@ const KeyContainer = styled.button<{ $status?: TileStatus; $wide?: boolean }>`
   @media (max-width: ${({ theme }) => theme.breakpoints.mobile}) {
     height: 48px;
     font-size: ${({ $wide }) => ($wide ? '11px' : '1.125rem')};
+    min-width: 30px;
+    max-width: ${({ $wide }) => ($wide ? '65px' : '35px')};
   }
 `;
 

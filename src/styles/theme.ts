@@ -25,6 +25,11 @@ export const theme = {
   },
   breakpoints: {
     mobile: '500px'
+  },
+  mobileSizes: {
+    keyboard: {
+      gap: '4px'
+    }
   }
 } as const;
 
